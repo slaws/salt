@@ -451,7 +451,19 @@ def check_password(name, password, runas=None):
         server_version = server_version.group(1).split('-')[0]
         version = [int(i) for i in server_version.split('.')]
     except ValueError:
-        version = (0, 0, 0)
+        # Trying for RMQ 3.8
+        try:
+          res = __salt__['cmd.run']([RABBITMQCTL, 'status','--formatter','json'], reset_system_locale=False, runas=runas, python_shell=False)
+          server_version = salt.utils.json.loads(res).get('rabbitmq_version',None)
+
+          if server_version is None:
+              raise ValueError
+
+          server_version = server_version.split('-')[0]
+          version = [int(i) for i in server_version.split('.')]
+        except ValueError:
+          version = (0, 0, 0)
+
     if len(version) < 3:
         version = (0, 0, 0)
 
